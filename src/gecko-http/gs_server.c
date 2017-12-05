@@ -274,7 +274,7 @@ int server_handle_connection(void *args)
             GS_DEBUG("resource %s", resource);
             GS_DEBUG("gateway %p", loop_args->server);
             GS_DEBUG("routers %p", loop_args->server->routers);
-            if ((router = (router_t) gs_hash_get(loop_args->server->routers, resource, sizeof(char *))) != NULL) {
+            if ((router = (router_t) gs_hash_get(loop_args->server->routers, resource, strlen(resource))) != NULL) {
                 GS_DEBUG("request delegated to router for resource '%s'", resource);
                 router(loop_args->system, request, &response);
             } else {

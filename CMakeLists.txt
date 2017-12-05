@@ -26,8 +26,10 @@ include_directories(
         ${APR_INCLUDE_DIR}
 )
 
-set(SOURCE_FILES
+file(GLOB_RECURSE COMMONS_SOURCE_FILES "libs/gecko-commons/src/*.c")
 
+set(SOURCE_FILES
+        ${COMMONS_SOURCE_FILES}
         include/gecko-http/gecko-http.h
         include/gecko-http/gs_http.h
         include/gecko-http/gs_request.h
@@ -46,8 +48,6 @@ set(SOURCE_FILES
         include/gecko-http/gs_stdinc.h
 
         include/gecko-http/gecko-http.h)
-
-file(GLOB_RECURSE SOURCE_FILES "libs/gecko-commons/src/*.c")
 
 add_executable(
     gecko
