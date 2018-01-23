@@ -39,6 +39,7 @@ typedef struct gs_request_t {
     gs_hash_t           *form_data;
     gs_http_method_e     method;
     char                *resource;
+    char                *content;
     bool                 is_valid;
     bool                 is_multipart;
     char                *boundary;
@@ -63,6 +64,7 @@ GS_DECLARE(gs_status_t) gs_request_create(gs_request_t **request, int socket_des
     gs_hash_create(&result->form_data, 10, GS_STRING_COMP);
     result->is_valid = false;
     result->is_multipart = false;
+    result->content = NULL;
     result->body_type = GS_BODY_UNKNOWN;
     result->method = GS_UNKNOWN;
 
@@ -123,6 +125,22 @@ GS_DECLARE(gs_status_t) gs_request_form_by_name(char const **value, const gs_req
     GS_REQUIRE_NONNULL(value);
     *value = gs_hash_get(request->form_data, key, strlen(key));
     return GS_SUCCESS;
+}
+
+GS_DECLARE(gs_status_t) gs_request_has_content(const gs_request_t *request)
+{
+    return (request != NULL ? (request->content != NULL ? GS_TRUE : GS_FALSE) : GS_ILLEGALARG);
+}
+
+GS_DECLARE(gs_status_t) gs_request_get_content(char const **value, const gs_request_t *request)
+{
+    GS_REQUIRE_NONNULL(value);
+    GS_REQUIRE_NONNULL(request);
+    if (gs_request_has_content(request) == GS_TRUE) {
+        *value = request->content;
+        return GS_SUCCESS;
+    } else return GS_FAILED;
+
 }
 
 GS_DECLARE(gs_status_t) gs_request_method(gs_http_method_e *method, const gs_request_t *request)

@@ -51,6 +51,10 @@ GS_DECLARE(gs_status_t) gs_request_has_form(const gs_request_t *request, const c
 
 GS_DECLARE(gs_status_t) gs_request_form_by_name(char const** value, const gs_request_t *request, const char *key);
 
+GS_DECLARE(gs_status_t) gs_request_has_content(const gs_request_t *request);
+
+GS_DECLARE(gs_status_t) gs_request_get_content(char const **value, const gs_request_t *request);
+
 GS_DECLARE(gs_status_t) gs_request_method(gs_http_method_e *method, const gs_request_t *request);
 
 GS_DECLARE(gs_status_t) gs_request_is_method(const gs_request_t *request, gs_http_method_e method);
