@@ -139,7 +139,10 @@ GS_DECLARE(gs_status_t) gs_request_get_content(char const **value, const gs_requ
     if (gs_request_has_content(request) == GS_TRUE) {
         *value = request->content;
         return GS_SUCCESS;
-    } else return GS_FAILED;
+    } else {
+        *value = NULL;
+        return GS_FAILED;
+    }
 
 }
 
@@ -171,7 +174,7 @@ GS_DECLARE(gs_status_t) gs_request_is_valid(const gs_request_t *request)
     return (request->is_valid);
 }
 
- void parse_request(gs_request_t *request, int socket_desc)
+void parse_request(gs_request_t *request, int socket_desc)
 {
     char message_buffer[10240];
 
@@ -182,7 +185,9 @@ GS_DECLARE(gs_status_t) gs_request_is_valid(const gs_request_t *request)
     // Parse line by line
     char *last_line;
     char *line = apr_strtok(apr_pstrdup(request->pool, message_buffer), "\r\n", &last_line );
-    bool process_http_method = true;
+
+    enum parsing_modus { PARSE_HTTP_METHOD, PARSE_HTTP_FIELDS, PARSE_HTTP_CONTENT }
+            parsing_modus = PARSE_HTTP_METHOD;
 
     while(line != NULL) {
         // Example request
@@ -197,47 +202,62 @@ GS_DECLARE(gs_status_t) gs_request_is_valid(const gs_request_t *request)
 
         // until an empty line is reached, the header is being parsed
         if(strlen(line)) {
-            if (process_http_method) {
-                // length of the sub string before the first whitespace, i.e., the method "POST", "GET",...
-                int method_ends_at = strcspn(line, " ");
-                if (method_ends_at > 0) {
-                    char *method_str = apr_pstrndup(request->pool, line, method_ends_at);
-                    if (!strcmp(method_str, "OPTIONS"))
-                        request->method = GS_OPTIONS;
-                    else if (!strcmp(method_str, "GET"))
-                        request->method = GS_GET;
-                    else if (!strcmp(method_str, "HEAD"))
-                        request->method = GS_HEAD;
-                    else if (!strcmp(method_str, "POST"))
-                        request->method = GS_POST;
-                    else if (!strcmp(method_str, "PUT"))
-                        request->method = GS_PUT;
-                    else if (!strcmp(method_str, "DELETE"))
-                        request->method = GS_DELETE;
-                    else if (!strcmp(method_str, "TRACE"))
-                        request->method = GS_TRACE;
-                    else if (!strcmp(method_str, "CONNECT"))
-                        request->method = GS_CONNECT;
-                    else
-                        request->method = GS_UNKNOWN;
+            switch (parsing_modus) {
+                case PARSE_HTTP_METHOD: {
+                    // length of the sub string before the first whitespace, i.e., the method "POST", "GET",...
+                    int method_ends_at = strcspn(line, " ");
+                    if (method_ends_at > 0) {
+                        char *method_str = apr_pstrndup(request->pool, line, method_ends_at);
+                        if (!strcmp(method_str, "OPTIONS"))
+                            request->method = GS_OPTIONS;
+                        else if (!strcmp(method_str, "GET"))
+                            request->method = GS_GET;
+                        else if (!strcmp(method_str, "HEAD"))
+                            request->method = GS_HEAD;
+                        else if (!strcmp(method_str, "POST"))
+                            request->method = GS_POST;
+                        else if (!strcmp(method_str, "PUT"))
+                            request->method = GS_PUT;
+                        else if (!strcmp(method_str, "DELETE"))
+                            request->method = GS_DELETE;
+                        else if (!strcmp(method_str, "TRACE"))
+                            request->method = GS_TRACE;
+                        else if (!strcmp(method_str, "CONNECT"))
+                            request->method = GS_CONNECT;
+                        else
+                            request->method = GS_UNKNOWN;
 
-                    // length of the sub string before the next white space after method first whitespace, i.e., "<RESOURCE>"
-                    int resource_ends_at = strcspn(line + method_ends_at + 1, " ");
-                    if (resource_ends_at > 0) {
-                        request->resource = apr_pstrndup(request->pool, line + method_ends_at + 1, resource_ends_at);
-                        request->is_valid = true;
+                        // length of the sub string before the next white space after method first whitespace, i.e., "<RESOURCE>"
+                        int resource_ends_at = strcspn(line + method_ends_at + 1, " ");
+                        if (resource_ends_at > 0) {
+                            request->resource = apr_pstrndup(request->pool, line + method_ends_at + 1,
+                                                             resource_ends_at);
+                            request->is_valid = true;
+                        }
                     }
-                }
-                process_http_method = false;
-            } else {
-                // length of the sub string before the assignment, i.e., fields "Host", "User-Agent",...
-                int assignment_at = strcspn(line, ":");
-                if (assignment_at > 0) {
-                    char *field_name = apr_pstrndup(request->pool, line, assignment_at);
-                    char *field_value = apr_pstrndup(request->pool, line + assignment_at + 2, strlen(line) + 2 - assignment_at);
-                    gs_hash_set(request->fields, field_name, strlen(field_name), field_value);
-                }
+                    parsing_modus = PARSE_HTTP_FIELDS;
+                } break;
+                case PARSE_HTTP_FIELDS: {
+                    // length of the sub string before the assignment, i.e., fields "Host", "User-Agent",...
+                    int assignment_at = strcspn(line, ":");
+                    if (assignment_at > 0) {
+                        char *field_name = apr_pstrndup(request->pool, line, assignment_at);
+                        char *field_value = apr_pstrndup(request->pool, line + assignment_at + 2,
+                                                         strlen(line) + 2 - assignment_at);
+                        gs_hash_set(request->fields, field_name, strlen(field_name), field_value);
+                    }
+                } break;
+                case PARSE_HTTP_CONTENT: {
+                    // The double new line for the content part is reached. Thus, parse content
+                    request->content = (request->content == NULL) ?
+                                       apr_pstrdup(request->pool, line) :
+                                       apr_pstrcat(request->pool, request->content, line, NULL);
+                } break;
+                default: panic("Unknown request parsing mode %d!", parsing_modus);
             }
+        }
+        if (strstr(last_line, "\n\r\n") == last_line) {
+            parsing_modus = PARSE_HTTP_CONTENT;
         }
         line = apr_strtok( NULL, "\r\n",  &last_line);
     }
@@ -273,6 +293,7 @@ GS_DECLARE(gs_status_t) gs_request_is_valid(const gs_request_t *request)
             int multipart_at = strcspn(content_type_value, ";");
             if (multipart_at > 0 &&
                 !strcmp(apr_pstrndup(request->pool, content_type_value, multipart_at), "multipart/form-data")) {
+                // this request is multi-part
                 int boundary_def_at = strcspn(content_type_value, "=");
                 if (boundary_def_at > 0) {
                     request->is_multipart = true;
@@ -288,35 +309,35 @@ GS_DECLARE(gs_status_t) gs_request_is_valid(const gs_request_t *request)
     // parse body part
     switch (request->body_type) {
         case GS_MULTIPART: {
-                bool read_name = true;
+            bool read_name = true;
             char *attribute_name = NULL, *attribute_value = NULL;
-                while(line != NULL) {
-                    if (!strstr(line, request->boundary)) {
-                        if (read_name) {
-                            if (strstr(line, "form-data; name=")) {
-                                // read form name
-                                int name_starts_at = strcspn(line, "\"") + 1;
-                                int name_end_at = strcspn(line + name_starts_at, "\"");
-                                if (name_end_at < strlen(line)) {
-                                    attribute_name = apr_pstrndup(request->pool, line + name_starts_at, name_end_at);
-                                    read_name = false;
-                                }
+            while(line != NULL) {
+                if (!strstr(line, request->boundary)) {
+                    if (read_name) {
+                        if (strstr(line, "form-data; name=")) {
+                            // read form name
+                            int name_starts_at = strcspn(line, "\"") + 1;
+                            int name_end_at = strcspn(line + name_starts_at, "\"");
+                            if (name_end_at < strlen(line)) {
+                                attribute_name = apr_pstrndup(request->pool, line + name_starts_at, name_end_at);
+                                read_name = false;
                             }
-                        } else {
-                            // read form data
-                            attribute_value = apr_pstrdup(request->pool, line);
-                            read_name = true;
                         }
+                    } else {
+                        // read form data
+                        attribute_value = apr_pstrdup(request->pool, line);
+                        read_name = true;
                     }
-                    if (attribute_name != NULL && attribute_value != NULL) {
-                        gs_hash_set(request->form_data, attribute_name, strlen(attribute_name), attribute_value);
-                        attribute_name = attribute_value = NULL;
-                    }
-                    line = apr_strtok( NULL, "\r\n",  &last_line);
                 }
-            } break;
+                if (attribute_name != NULL && attribute_value != NULL) {
+                    gs_hash_set(request->form_data, attribute_name, strlen(attribute_name), attribute_value);
+                    attribute_name = attribute_value = NULL;
+                }
+                line = apr_strtok( NULL, "\r\n",  &last_line);
+            }
+        } break;
         default:
-            warn("Unknown or empty body type for request: '%s'", request->original);
+        warn("Unknown or empty body type for request: '%s'", request->original);
             break;
     }
 }
