@@ -44,6 +44,11 @@
 
 typedef uint32_t gs_http_status_code_t;
 
+typedef enum gs_http_method_e {
+    GS_HTTP_OPTIONS, GS_HTTP_HEAD, GS_HTTP_TRACE, GS_HTTP_POST, GS_HTTP_GET, GS_HTTP_PUT, GS_HTTP_DELETE, GS_HTTP_CONNECT, GS_HTTP_UNKNOWN
+} gs_http_method_e;
+
+
 typedef enum gs_content_type_e
 {
     MEDIA_MULTI_PART_FORM_DATA

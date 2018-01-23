@@ -18,6 +18,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 #include <gecko-commons/gecko-commons.h>
+#include <gecko-http/gs_http.h>
 
 // ---------------------------------------------------------------------------------------------------------------------
 // D A T A   T Y P E S
@@ -26,10 +27,6 @@
 typedef enum gs_request_body_e gs_request_body_e;
 
 typedef struct gs_request_t gs_request_t;
-
-typedef enum gs_http_method_e {
-    GS_HTTP_OPTIONS, GS_HTTP_HEAD, GS_HTTP_TRACE, GS_HTTP_POST, GS_HTTP_GET, GS_HTTP_PUT, GS_HTTP_DELETE, GS_HTTP_CONNECT, GS_HTTP_UNKNOWN
-} gs_http_method_e;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // I N T E R F A C E   F U N C T I O N S
