@@ -27,6 +27,7 @@
 #include <gecko-commons/c11threads.h>
 #include <gecko-commons/containers/gs_hash.h>
 
+#include <gecko-http/gs_http.h>
 #include <gecko-http/gs_server.h>
 #include <gecko-http/gs_response.h>
 #include <gecko-http/gs_request.h>
