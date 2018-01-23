@@ -34,13 +34,3 @@ const char *gs_codestr(gs_http_status_code_t code)
         default:                                      return "500 Internal Server Error";
     }
 }
-
-const char *gs_methodstr(gs_http_status_code_t code) {
-    switch (code) {
-        case HTTP_GET:    return HTTP_GET_STRING;
-        case HTTP_POST:   return HTTP_POST_STRING;
-        case HTTP_PUT:    return HTTP_PUT_STRING;
-        case HTTP_DELETE: return HTTP_DELETE_STRING;
-        default: return "(unknown)";
-    }
-}

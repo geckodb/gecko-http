@@ -28,7 +28,7 @@ typedef enum gs_request_body_e gs_request_body_e;
 typedef struct gs_request_t gs_request_t;
 
 typedef enum gs_http_method_e {
-    GS_OPTIONS, GS_HEAD, GS_TRACE, GS_POST, GS_GET, GS_PUT, GS_DELETE, GS_CONNECT, GS_UNKNOWN
+    GS_HTTP_OPTIONS, GS_HTTP_HEAD, GS_HTTP_TRACE, GS_HTTP_POST, GS_HTTP_GET, GS_HTTP_PUT, GS_HTTP_DELETE, GS_HTTP_CONNECT, GS_HTTP_UNKNOWN
 } gs_http_method_e;
 
 // ---------------------------------------------------------------------------------------------------------------------

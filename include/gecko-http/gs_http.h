@@ -49,15 +49,9 @@ typedef enum gs_content_type_e
     MEDIA_MULTI_PART_FORM_DATA
 } gs_content_type_e;
 
-typedef enum gs_method_e {
-    HTTP_GET, HTTP_POST, HTTP_PUT, HTTP_DELETE, HTTP_OTHERS
-} gs_method_e;
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // I N T E R F A C E   F U N C T I O N S
 // ---------------------------------------------------------------------------------------------------------------------
 
 const char *gs_codestr(gs_http_status_code_t code);
-
-const char *gs_methodstr(gs_http_status_code_t code);

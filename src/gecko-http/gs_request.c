@@ -66,7 +66,7 @@ GS_DECLARE(gs_status_t) gs_request_create(gs_request_t **request, int socket_des
     result->is_multipart = false;
     result->content = NULL;
     result->body_type = GS_BODY_UNKNOWN;
-    result->method = GS_UNKNOWN;
+    result->method = GS_HTTP_UNKNOWN;
 
     parse_request(result, socket_desc);
 
@@ -209,23 +209,23 @@ void parse_request(gs_request_t *request, int socket_desc)
                     if (method_ends_at > 0) {
                         char *method_str = apr_pstrndup(request->pool, line, method_ends_at);
                         if (!strcmp(method_str, "OPTIONS"))
-                            request->method = GS_OPTIONS;
+                            request->method = GS_HTTP_OPTIONS;
                         else if (!strcmp(method_str, "GET"))
-                            request->method = GS_GET;
+                            request->method = GS_HTTP_GET;
                         else if (!strcmp(method_str, "HEAD"))
-                            request->method = GS_HEAD;
+                            request->method = GS_HTTP_HEAD;
                         else if (!strcmp(method_str, "POST"))
-                            request->method = GS_POST;
+                            request->method = GS_HTTP_POST;
                         else if (!strcmp(method_str, "PUT"))
-                            request->method = GS_PUT;
+                            request->method = GS_HTTP_PUT;
                         else if (!strcmp(method_str, "DELETE"))
-                            request->method = GS_DELETE;
+                            request->method = GS_HTTP_DELETE;
                         else if (!strcmp(method_str, "TRACE"))
-                            request->method = GS_TRACE;
+                            request->method = GS_HTTP_TRACE;
                         else if (!strcmp(method_str, "CONNECT"))
-                            request->method = GS_CONNECT;
+                            request->method = GS_HTTP_CONNECT;
                         else
-                            request->method = GS_UNKNOWN;
+                            request->method = GS_HTTP_UNKNOWN;
 
                         // length of the sub string before the next white space after method first whitespace, i.e., "<RESOURCE>"
                         int resource_ends_at = strcspn(line + method_ends_at + 1, " ");

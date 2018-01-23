@@ -151,14 +151,14 @@ GS_DECLARE(gs_status_t) gs_server_router_add(gs_server_t *server, gs_http_method
    // dict_put(gateway->routers, &resource, &router);
     char *key = apr_pstrdup(server->pool, resource);
     switch (method) {
-        case GS_OPTIONS: gs_hash_set(server->routers_options, key, strlen(key), router); break;
-        case GS_HEAD:    gs_hash_set(server->routers_head, key, strlen(key), router); break;
-        case GS_TRACE:   gs_hash_set(server->routers_trace, key, strlen(key), router); break;
-        case GS_POST:    gs_hash_set(server->routers_post, key, strlen(key), router); break;
-        case GS_GET:     gs_hash_set(server->routers_get, key, strlen(key), router); break;
-        case GS_PUT:     gs_hash_set(server->routers_put, key, strlen(key), router); break;
-        case GS_DELETE:  gs_hash_set(server->routers_delete, key, strlen(key), router); break;
-        case GS_CONNECT: gs_hash_set(server->routers_connect, key, strlen(key), router); break;
+        case GS_HTTP_OPTIONS: gs_hash_set(server->routers_options, key, strlen(key), router); break;
+        case GS_HTTP_HEAD:    gs_hash_set(server->routers_head, key, strlen(key), router); break;
+        case GS_HTTP_TRACE:   gs_hash_set(server->routers_trace, key, strlen(key), router); break;
+        case GS_HTTP_POST:    gs_hash_set(server->routers_post, key, strlen(key), router); break;
+        case GS_HTTP_GET:     gs_hash_set(server->routers_get, key, strlen(key), router); break;
+        case GS_HTTP_PUT:     gs_hash_set(server->routers_put, key, strlen(key), router); break;
+        case GS_HTTP_DELETE:  gs_hash_set(server->routers_delete, key, strlen(key), router); break;
+        case GS_HTTP_CONNECT: gs_hash_set(server->routers_connect, key, strlen(key), router); break;
         default: return GS_FAILED;
     }
     return GS_SUCCESS;
@@ -305,14 +305,14 @@ int server_handle_connection(void *args)
             gs_request_method(&method, request);
 
             switch (method) {
-                case GS_OPTIONS: router_table = loop_args->server->routers_options; break;
-                case GS_HEAD:    router_table = loop_args->server->routers_head; break;
-                case GS_TRACE:   router_table = loop_args->server->routers_trace; break;
-                case GS_POST:    router_table = loop_args->server->routers_post; break;
-                case GS_GET:     router_table = loop_args->server->routers_get; break;
-                case GS_PUT:     router_table = loop_args->server->routers_put; break;
-                case GS_DELETE:  router_table = loop_args->server->routers_delete; break;
-                case GS_CONNECT: router_table = loop_args->server->routers_connect; break;
+                case GS_HTTP_OPTIONS: router_table = loop_args->server->routers_options; break;
+                case GS_HTTP_HEAD:    router_table = loop_args->server->routers_head; break;
+                case GS_HTTP_TRACE:   router_table = loop_args->server->routers_trace; break;
+                case GS_HTTP_POST:    router_table = loop_args->server->routers_post; break;
+                case GS_HTTP_GET:     router_table = loop_args->server->routers_get; break;
+                case GS_HTTP_PUT:     router_table = loop_args->server->routers_put; break;
+                case GS_HTTP_DELETE:  router_table = loop_args->server->routers_delete; break;
+                case GS_HTTP_CONNECT: router_table = loop_args->server->routers_connect; break;
                 default: warn("unknown http request method '%d'", method);
             }
 
@@ -355,7 +355,7 @@ GS_DECLARE(gs_status_t) gs_server_pool_create(gs_server_pool_t **server_set, gs_
     result->next_port_idx = 0;
 
     gs_server_create(&result->gateway, gateway_port, dispatcher);
-    gs_server_router_add(result->gateway, HTTP_GET, gateway_resource, router);
+    gs_server_router_add(result->gateway, GS_HTTP_GET, gateway_resource, router);
 
     *server_set = result;
     return GS_SUCCESS;
