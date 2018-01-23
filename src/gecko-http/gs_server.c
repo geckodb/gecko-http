@@ -39,7 +39,14 @@ typedef struct gs_server_t
     struct sockaddr_in   client_addr;
     int                  server_desc;
     socklen_t            socket_len;
-    gs_hash_t           *routers;
+    gs_hash_t           *routers_options,
+                        *routers_head,
+                        *routers_trace,
+                        *routers_post,
+                        *routers_get,
+                        *routers_put,
+                        *routers_delete,
+                        *routers_connect;
     thrd_t               thread;
     bool                 is_running;
     bool                 is_disposable;
@@ -122,7 +129,15 @@ GS_DECLARE(gs_status_t) gs_server_create(gs_server_t **out, unsigned short port,
                                         sizeof(char *), sizeof(router_t), RESPONSE_DICT_CAPACITY,
                                         RESPONSE_DICT_CAPACITY, 1.7f, 0.75f,
                                         str_equals, str_clean_up, true);*/
-    gs_hash_create(&server->routers, 10, GS_STRING_COMP);
+
+    gs_hash_create(&server->routers_options, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_head, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_trace, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_post, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_get, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_put, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_delete, 10, GS_STRING_COMP);
+    gs_hash_create(&server->routers_connect, 10, GS_STRING_COMP);
 
     printf("listening to port %d\n", (int) ntohs(server->server_addr.sin_port));
 
@@ -130,12 +145,22 @@ GS_DECLARE(gs_status_t) gs_server_create(gs_server_t **out, unsigned short port,
     return GS_SUCCESS;
 }
 
-GS_DECLARE(gs_status_t) gs_server_router_add(gs_server_t *server, const char *resource, router_t router)
+GS_DECLARE(gs_status_t) gs_server_router_add(gs_server_t *server, gs_http_method_e method, const char *resource, router_t router)
 {
     GS_REQUIRE_NONNULL(server)
    // dict_put(gateway->routers, &resource, &router);
     char *key = apr_pstrdup(server->pool, resource);
-    gs_hash_set(server->routers, key, strlen(key), router);
+    switch (method) {
+        case GS_OPTIONS: gs_hash_set(server->routers_options, key, strlen(key), router); break;
+        case GS_HEAD:    gs_hash_set(server->routers_head, key, strlen(key), router); break;
+        case GS_TRACE:   gs_hash_set(server->routers_trace, key, strlen(key), router); break;
+        case GS_POST:    gs_hash_set(server->routers_post, key, strlen(key), router); break;
+        case GS_GET:     gs_hash_set(server->routers_get, key, strlen(key), router); break;
+        case GS_PUT:     gs_hash_set(server->routers_put, key, strlen(key), router); break;
+        case GS_DELETE:  gs_hash_set(server->routers_delete, key, strlen(key), router); break;
+        case GS_CONNECT: gs_hash_set(server->routers_connect, key, strlen(key), router); break;
+        default: return GS_FAILED;
+    }
     return GS_SUCCESS;
 }
 
@@ -274,7 +299,24 @@ int server_handle_connection(void *args)
             GS_DEBUG("resource %s", resource);
             GS_DEBUG("gateway %p", loop_args->server);
             GS_DEBUG("routers %p", loop_args->server->routers);
-            if ((router = (router_t) gs_hash_get(loop_args->server->routers, resource, strlen(resource))) != NULL) {
+
+            const gs_hash_t *router_table = NULL;
+            gs_http_method_e method;
+            gs_request_method(&method, request);
+
+            switch (method) {
+                case GS_OPTIONS: router_table = loop_args->server->routers_options; break;
+                case GS_HEAD:    router_table = loop_args->server->routers_head; break;
+                case GS_TRACE:   router_table = loop_args->server->routers_trace; break;
+                case GS_POST:    router_table = loop_args->server->routers_post; break;
+                case GS_GET:     router_table = loop_args->server->routers_get; break;
+                case GS_PUT:     router_table = loop_args->server->routers_put; break;
+                case GS_DELETE:  router_table = loop_args->server->routers_delete; break;
+                case GS_CONNECT: router_table = loop_args->server->routers_connect; break;
+                default: warn("unknown http request method '%d'", method);
+            }
+
+            if ((router = (router_t) gs_hash_get(router_table, resource, strlen(resource))) != NULL) {
                 GS_DEBUG("request delegated to router for resource '%s'", resource);
                 router(loop_args->system, request, &response);
             } else {
@@ -313,7 +355,7 @@ GS_DECLARE(gs_status_t) gs_server_pool_create(gs_server_pool_t **server_set, gs_
     result->next_port_idx = 0;
 
     gs_server_create(&result->gateway, gateway_port, dispatcher);
-    gs_server_router_add(result->gateway, gateway_resource, router);
+    gs_server_router_add(result->gateway, HTTP_GET, gateway_resource, router);
 
     *server_set = result;
     return GS_SUCCESS;
@@ -338,7 +380,7 @@ GS_DECLARE(gs_status_t) gs_server_pool_dispose(gs_server_pool_t *pool)
     return GS_SUCCESS;
 }
 
-GS_DECLARE(gs_status_t) gs_server_pool_router_add(gs_server_pool_t *pool, const char *resource, router_t router)
+GS_DECLARE(gs_status_t) gs_server_pool_router_add(gs_server_pool_t *pool, gs_http_method_e method, const char *resource, router_t router)
 {
     GS_REQUIRE_NONNULL(pool);
     GS_REQUIRE_NONNULL(resource);
@@ -348,7 +390,7 @@ GS_DECLARE(gs_status_t) gs_server_pool_router_add(gs_server_pool_t *pool, const 
 
     for (gs_server_t **it = gs_vec_begin(pool->servers); it != gs_vec_end(pool->servers); it++) {
         GS_DEBUG("add router to server %p", *it);
-        if ((status = gs_server_router_add(*it, resource, router)) != GS_SUCCESS)
+        if ((status = gs_server_router_add(*it, method, resource, router)) != GS_SUCCESS)
             return status;
     }
 

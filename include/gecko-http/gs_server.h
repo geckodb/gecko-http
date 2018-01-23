@@ -58,7 +58,7 @@ typedef void (*router_t)(gs_system_t *system, const gs_request_t *req, gs_respon
 
 GS_DECLARE(gs_status_t) gs_server_create(gs_server_t **server, unsigned short port, gs_dispatcher_t *dispatcher);
 
-GS_DECLARE(gs_status_t) gs_server_router_add(gs_server_t *server, const char *resource, router_t router);
+GS_DECLARE(gs_status_t) gs_server_router_add(gs_server_t *server, gs_http_method_e method, const char *resource, router_t router);
 
 GS_DECLARE(gs_status_t) gs_server_start(gs_server_t *server, gs_system_t *system, router_t catch);
 
@@ -76,7 +76,7 @@ GS_DECLARE(gs_status_t) gs_server_pool_create(gs_server_pool_t **server_set, gs_
 
 GS_DECLARE(gs_status_t) gs_server_pool_dispose(gs_server_pool_t *pool);
 
-GS_DECLARE(gs_status_t) gs_server_pool_router_add(gs_server_pool_t *pool, const char *resource, router_t router);
+GS_DECLARE(gs_status_t) gs_server_pool_router_add(gs_server_pool_t *pool, gs_http_method_e method, const char *resource, router_t router);
 
 GS_DECLARE(gs_status_t) gs_server_pool_start(gs_server_pool_t *pool, gs_system_t *system, router_t catch);
 
