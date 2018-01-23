@@ -296,10 +296,9 @@ int server_handle_connection(void *args)
             router_t router;
             char *resource;
             gs_request_resource(&resource, request);
-            GS_DEBUG("loop args %p", loop_args);
-            GS_DEBUG("resource %s", resource);
-            GS_DEBUG("gateway %p", loop_args->server);
-            GS_DEBUG("routers %p", loop_args->server->routers);
+            //GS_DEBUG("loop args %p", loop_args);
+            //GS_DEBUG("resource %s", resource);
+            //GS_DEBUG("gateway %p", loop_args->server);
 
             const gs_hash_t *router_table = NULL;
             gs_http_method_e method;
