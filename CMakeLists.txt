@@ -10,20 +10,37 @@ set(CMAKE_TEMP_OUTPUT_DIR     ${CMAKE_SOURCE_DIR}/cmake)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -std=c11 -Wall -Werror")
 
+# include third-party cmake files
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 cmake_minimum_required(VERSION 3.5)
+
+include(
+        "${CMAKE_SOURCE_DIR}/cmake/FindAPR.cmake"
+)
+
+find_package(APR     REQUIRED)
 
 option(BUILD_DOCUMENTATION "API documentation requires Doxygen" ${DOXYGEN_FOUND})
 
+# include third-party cmake files
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR})
 
-include(
-    "cmake/FindAPR.cmake"
-)
+message("APR include: " ${APR_INCLUDE_DIR})
+
 
 include_directories(
         "include"
         "libs/gecko-commons/include"
+
         ${APR_INCLUDE_DIR}
+        # This is a hack in case APR is not found in macOS High Sierra.
+        # You may install apr and apr-utils from sources and symbolic link these directories
+        "/usr/local/apr/include/apr-1/"
+        "/usr/local/apr/include/apr-utils"
+
 )
 
 file(GLOB_RECURSE COMMONS_SOURCE_FILES "libs/gecko-commons/src/*.c")
